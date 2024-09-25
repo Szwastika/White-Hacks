@@ -126,7 +126,7 @@
 									{
 										parts: [
 											{
-												text: `Analyze the following symptoms and provide a diagnosis and recommendation. Don't give me explanations or other content, just Diagnosis and recommendation to which doctor to consult: ${symptoms}`,
+												text: `Analyze the following symptoms and provide a diagnosis and recommendation. Don't give me explanations or other content, just Diagnosis and recommendation to which doctor to consult, I need response in JSON :{"diagnosis":"","recommendation":""}, Symptoms: ${symptoms}`,
 											},
 										],
 									},
@@ -145,14 +145,19 @@
 						console.log("RESPONSE", aiResponse);
 
 						// Parse the response
-						const parsedResponse = parseResponse(aiResponse);
+						const parsedResponse = JSON.parse(aiResponse);
 
 						// Display Diagnosis and Recommendation
 						resultDiv.innerHTML = `
 							<h3 class="mb-3"><i class="fas fa-clipboard-check me-2"></i>Diagnosis</h3>
-							<p class="mb-4">${parsedResponse.diagnosis}</p>
+							<p class="mb-4">${
+								parsedResponse.diagnosis || "No specific diagnosis provided"
+							}</p>
 							<h4 class="mb-3"><i class="fas fa-user-md me-2"></i>Recommendation</h4>
-							<p>${parsedResponse.recommendation}</p>
+							<p>${
+								parsedResponse.recommendation ||
+								"No specific recommendations provided"
+							}</p>
 						`;
 
 						// Show "Find Nearby Hospitals" button
@@ -163,44 +168,6 @@
 							"An error occurred while analyzing symptoms. Please try again.";
 					}
 				});
-
-			function parseResponse(response) {
-				const lines = response.split("\n");
-				let diagnosis = "";
-				let recommendation = "";
-				let currentSection = "";
-
-				for (const line of lines) {
-					const trimmedLine = line.trim();
-					if (trimmedLine.toLowerCase().startsWith("diagnosis:")) {
-						currentSection = "diagnosis";
-						diagnosis = trimmedLine.substring("diagnosis:".length).trim();
-					} else if (trimmedLine.toLowerCase().startsWith("recommendation:")) {
-						currentSection = "recommendation";
-						recommendation = trimmedLine
-							.substring("recommendation:".length)
-							.trim();
-					} else if (trimmedLine) {
-						// If the line is not empty and doesn't start with a keyword, append it to the current section
-						if (currentSection === "diagnosis") {
-							diagnosis += " " + trimmedLine;
-						} else if (currentSection === "recommendation") {
-							recommendation += " " + trimmedLine;
-						}
-					}
-				}
-
-				// If diagnosis or recommendation is empty, use the entire response
-				if (!diagnosis && !recommendation) {
-					diagnosis = response.trim();
-				}
-
-				return {
-					diagnosis: diagnosis || "No specific diagnosis provided",
-					recommendation:
-						recommendation || "No specific recommendation provided",
-				};
-			}
 
 			document
 				.getElementById("find-hospitals-btn")
