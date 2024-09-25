@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Symptom Checker & Hospital Finder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>AI-Powered Symptom Checker & Nearby Hospital Finder</h1>
+
+        <!-- Symptom Input Form -->
+        <form id="symptom-form">
+            <div class="mb-3">
+                <label for="symptoms" class="form-label">Enter your symptoms</label>
+                <textarea class="form-control" id="symptoms" name="symptoms" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Analyze Symptoms</button>
+        </form>
+
+        <!-- Analysis Result -->
+        <div id="result" class="mt-4"></div>
+
+        <!-- Button to Find Nearby Hospitals -->
+        <button class="btn btn-success mt-3" id="find-hospitals-btn" style="display:none;">Find Nearby Hospitals</button>
+
+        <!-- Hospital Suggestions -->
+        <div id="hospital-list" class="mt-4"></div>
+    </div>
+
+    <!-- Google Maps API (use your own API key) -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
+
+    <!-- Custom Script -->
+    <script>
+        document.getElementById('symptom-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const symptoms = document.getElementById('symptoms').value;
+            const resultDiv = document.getElementById('result');
+            const hospitalBtn = document.getElementById('find-hospitals-btn');
+            const hospitalListDiv = document.getElementById('hospital-list');
+
+            // Reset hospital list
+            hospitalListDiv.innerHTML = '';
+
+            // Basic symptom analysis (replace with AI model if necessary)
+            let diagnosis, recommendation;
+            if (symptoms.toLowerCase().includes('fever') && symptoms.toLowerCase().includes('cough')) {
+                diagnosis = "You might have a common cold or flu.";
+                recommendation = "It is recommended to visit a General Physician.";
+            } else {
+                diagnosis = "Your symptoms are unclear.";
+                recommendation = "It is advised to visit a healthcare professional.";
+            }
+
+            // Display Diagnosis and Recommendation
+            resultDiv.innerHTML = `
+                <h3>Diagnosis: ${diagnosis}</h3>
+                <p><strong>Recommendation:</strong> ${recommendation}</p>
+            `;
+
+            // Show "Find Nearby Hospitals" button
+            hospitalBtn.style.display = 'block';
+
+            // Add event listener to the "Find Hospitals" button
+            hospitalBtn.addEventListener('click', function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        findNearbyHospitals(lat, lng);
+                    }, function() {
+                        hospitalListDiv.innerHTML = "<p>Geolocation is not supported or permission was denied.</p>";
+                    });
+                } else {
+                    hospitalListDiv.innerHTML = "<p>Geolocation is not supported by your browser.</p>";
+                }
+            });
+        });
+
+        function findNearbyHospitals(lat, lng) {
+            const location = new google.maps.LatLng(lat, lng);
+            const request = {
+                location: location,
+                radius: '5000',  // 5 km radius
+                type: ['hospital']
+            };
+
+            const service = new google.maps.places.PlacesService(document.createElement('div'));
+            service.nearbySearch(request, function(results, status) {
+                const hospitalListDiv = document.getElementById('hospital-list');
+                hospitalListDiv.innerHTML = "<h4>Nearby Hospitals:</h4><ul class='list-group'>";
+
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    results.forEach(hospital => {
+                        hospitalListDiv.innerHTML += `
+                            <li class="list-group-item">
+                                <strong>${hospital.name}</strong><br>
+                                Address: ${hospital.vicinity}<br>
+                                Rating: ${hospital.rating || 'N/A'}
+                            </li>
+                        `;
+                    });
+                    hospitalListDiv.innerHTML += "</ul>";
+                } else {
+                    hospitalListDiv.innerHTML = "<p>No nearby hospitals found.</p>";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
