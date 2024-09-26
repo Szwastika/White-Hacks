@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Health Assistant</title>
+		<link
+			href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+			rel="stylesheet"
+		/>
+		<style>
+			body {
+				background-color: #f0f4f8;
+				color: #333;
+				font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			}
+			.container {
+				max-width: 1200px;
+			}
+			.card {
+				border: none;
+				border-radius: 15px;
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+				transition: transform 0.2s;
+			}
+			.card:hover {
+				transform: translateY(-5px);
+			}
+			.card-header {
+				background-color: #4a90e2;
+				color: white;
+				border-radius: 15px 15px 0 0 !important;
+			}
+			.btn-primary {
+				background-color: #4a90e2;
+				border: none;
+			}
+			.btn-primary:hover {
+				background-color: #3a7bc8;
+			}
+			.btn-outline-primary {
+				color: #4a90e2;
+				border-color: #4a90e2;
+			}
+			.btn-outline-primary:hover,
+			.btn-outline-primary.active {
+				background-color: #4a90e2;
+				color: white;
+			}
+			.rating {
+				color: #ffc107;
+			}
+			#map {
+				height: 600px;
+				width: 100%;
+				border-radius: 15px;
+			}
+			.navbar {
+				background-color: #4a90e2 !important;
+			}
+			#medicationForm input[type="text"],
+			#medicationForm input[type="time"],
+			#medicationForm input[type="date"] {
+				width: 100%;
+				padding: 10px;
+				margin: 10px 0;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+			}
+			#dosageHistoryTable {
+				width: 100%;
+				margin-top: 20px;
+				border-collapse: collapse;
+			}
+			#dosageHistoryTable th,
+			#dosageHistoryTable td {
+				border: 1px solid #ddd;
+				padding: 12px;
+				text-align: left;
+			}
+			#dosageHistoryTable th {
+				background-color: #4a90e2;
+				color: white;
+			}
+		</style>
+	</head>
+	<body>
+		<nav class="navbar navbar-expand-lg navbar-dark">
+			<div class="container">
+				<a class="navbar-brand" href="#"
+					><i class="fas fa-heartbeat me-2"></i>Health Assistant</a
+				>
+			</div>
+		</nav>
+
+		<div class="container mt-4">
+			<ul class="nav nav-tabs" id="myTab" role="tablist">
+				<li class="nav-item" role="presentation">
+					<button
+						class="nav-link active"
+						id="hospitals-tab"
+						data-bs-toggle="tab"
+						data-bs-target="#hospitals"
+						type="button"
+						role="tab"
+						aria-controls="hospitals"
+						aria-selected="true"
+					>
+						Nearby Hospitals
+					</button>
+				</li>
+				<li class="nav-item" role="presentation">
+					<button
+						class="nav-link"
+						id="medication-tab"
+						data-bs-toggle="tab"
+						data-bs-target="#medication"
+						type="button"
+						role="tab"
+						aria-controls="medication"
+						aria-selected="false"
+					>
+						Medication Reminder
+					</button>
+				</li>
+			</ul>
+			<div class="tab-content" id="myTabContent">
+				<div
+					class="tab-pane fade show active"
+					id="hospitals"
+					role="tabpanel"
+					aria-labelledby="hospitals-tab"
+				>
+					<div class="card mb-4 mt-4">
+						<div class="card-body">
+							<div class="btn-group w-100" role="group">
+								<button
+									type="button"
+									class="btn btn-outline-primary active"
+									id="list-view-btn"
+								>
+									<i class="fas fa-list me-2"></i>List View
+								</button>
+								<button
+									type="button"
+									class="btn btn-outline-primary"
+									id="map-view-btn"
+								>
+									<i class="fas fa-map-marked-alt me-2"></i>Map View
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<div id="loading" class="text-center">
+						<div class="spinner-border text-primary" role="status">
+							<span class="visually-hidden">Loading...</span>
+						</div>
+						<p class="mt-2">Loading nearby hospitals...</p>
+					</div>
+
+					<div id="list-view">
+						<div id="hospitals-container" class="row g-4"></div>
+						<div
+							id="pagination"
+							class="d-flex justify-content-center mt-4"
+						></div>
+					</div>
+
+					<div id="map-view" style="display: none">
+						<div id="map"></div>
+					</div>
+				</div>
+				<div
+					class="tab-pane fade"
+					id="medication"
+					role="tabpanel"
+					aria-labelledby="medication-tab"
+				>
+					<div class="card mt-4">
+						<div class="card-header">
+							<h5 class="mb-0">Schedule Your Medication</h5>
+						</div>
+						<div class="card-body">
+							<form id="medicationForm">
+								<div class="mb-3">
+									<label for="medicationName" class="form-label"
+										>Medication Name:</label
+									>
+									<input
+										type="text"
+										class="form-control"
+										id="medicationName"
+										name="medicationName"
+										placeholder="e.g. Paracetamol"
+										required
+									/>
+								</div>
+								<div class="mb-3">
+									<label for="dosage" class="form-label">Dosage:</label>
+									<input
+										type="text"
+										class="form-control"
+										id="dosage"
+										name="dosage"
+										placeholder="e.g. 500mg"
+										required
+									/>
+								</div>
+								<div class="mb-3">
+									<label for="startDate" class="form-label">Start Date:</label>
+									<input
+										type="date"
+										class="form-control"
+										id="startDate"
+										name="startDate"
+										required
+									/>
+								</div>
+								<div class="mb-3">
+									<label for="time" class="form-label">Reminder Time:</label>
+									<input
+										type="time"
+										class="form-control"
+										id="time"
+										name="time"
+										required
+									/>
+								</div>
+								<button type="submit" class="btn btn-primary">
+									Add Reminder
+								</button>
+							</form>
+						</div>
+					</div>
+
+					<div class="card mt-4">
+						<div class="card-header">
+							<h5 class="mb-0">Dosage History</h5>
+						</div>
+						<div class="card-body">
+							<table id="dosageHistoryTable" class="table table-striped">
+								<thead>
+									<tr>
+										<th>Medication</th>
+										<th>Dosage</th>
+										<th>Date</th>
+										<th>Time</th>
+									</tr>
+								</thead>
+								<tbody>
+									<!-- Dosage history will be inserted here dynamically -->
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					<div class="card mt-4">
+						<div class="card-header">
+							<h5 class="mb-0">Additional Features</h5>
+						</div>
+						<div class="card-body">
+							<h6>Notifications</h6>
+							<p>
+								Enable notifications to remind you when to take your medication.
+							</p>
+
+							<h6>Pharmacy & Refill</h6>
+							<p>Integrate with your pharmacy for easy prescription refills.</p>
+
+							<h6>Family/Caregiver Notifications</h6>
+							<p>Notify family or caregivers in case of missed doses.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBKzUpEhW-cu8LTr4cLl7ImJ2IJpy76u80&libraries=places,geometry"></script>
+		<script>
+			let userLocation;
+			let allHospitals = [];
+			let currentPage = 1;
+			let map,
+				markers = [];
+			const hospitalsPerPage = 6;
+
+			function getQueryParams() {
+				const params = new URLSearchParams(window.location.search);
+				return {
+					lat: parseFloat(params.get("lat")),
+					lng: parseFloat(params.get("lng")),
+				};
+			}
+
+			function findNearbyHospitals(lat, lng) {
+				userLocation = new google.maps.LatLng(lat, lng);
+				const request = {
+					location: userLocation,
+					radius: "5000",
+					type: ["hospital"],
+				};
+
+				const service = new google.maps.places.PlacesService(
+					document.createElement("div")
+				);
+				service.nearbySearch(request, (results, status) => {
+					if (status === google.maps.places.PlacesServiceStatus.OK) {
+						allHospitals = results.map((hospital) => ({
+							...hospital,
+							distance:
+								google.maps.geometry.spherical.computeDistanceBetween(
+									userLocation,
+									hospital.geometry.location
+								) / 1000,
+						}));
+						allHospitals.sort((a, b) => a.distance - b.distance);
+						displayHospitals();
+						initMap();
+					} else {
+						document.getElementById("loading").style.display = "none";
+						document.getElementById("hospitals-container").innerHTML =
+							'<div class="col-12"><div class="alert alert-warning" role="alert">No nearby hospitals found or there was an error fetching the data.</div></div>';
+					}
+				});
+			}
+
+			function displayHospitals() {
+				const container = document.getElementById("hospitals-container");
+				document.getElementById("loading").style.display = "none";
+				container.innerHTML = "";
+
+				const startIndex = (currentPage - 1) * hospitalsPerPage;
+				const endIndex = startIndex + hospitalsPerPage;
+				const hospitalsToDisplay = allHospitals.slice(startIndex, endIndex);
+
+				hospitalsToDisplay.forEach((hospital) => {
+					const card = `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">${hospital.name}</h5>
+                                <p class="card-text">
+                                    <i class="fas fa-map-marker-alt text-secondary me-2"></i>${
+																			hospital.vicinity
+																		}<br>
+                                    <i class="fas fa-route text-secondary me-2"></i>${hospital.distance.toFixed(
+																			2
+																		)} km<br>
+                                    <span class="rating">
+                                        ${"★".repeat(
+																					Math.round(hospital.rating || 0)
+																				)}${"☆".repeat(
+						5 - Math.round(hospital.rating || 0)
+					)}
+                                    </span> ${
+																			hospital.rating
+																				? hospital.rating.toFixed(1)
+																				: "N/A"
+																		}
+                                </p>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${hospital.geometry.location.lat()},${hospital.geometry.location.lng()}&origin=${userLocation.lat()},${userLocation.lng()}" target="_blank" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-directions me-2"></i>Get Directions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+					container.innerHTML += card;
+				});
+
+				updatePagination();
+			}
+
+			function updatePagination() {
+				const totalPages = Math.ceil(allHospitals.length / hospitalsPerPage);
+				const paginationElement = document.getElementById("pagination");
+				paginationElement.innerHTML = "";
+
+				for (let i = 1; i <= totalPages; i++) {
+					const button = document.createElement("button");
+					button.textContent = i;
+					button.className = `btn btn-outline-primary mx-1 ${
+						i === currentPage ? "active" : ""
+					}`;
+					button.onclick = () => {
+						currentPage = i;
+						displayHospitals();
+					};
+					paginationElement.appendChild(button);
+				}
+			}
+
+			function initMap() {
+				map = new google.maps.Map(document.getElementById("map"), {
+					center: userLocation,
+					zoom: 13,
+				});
+
+				new google.maps.Marker({
+					position: userLocation,
+					map: map,
+					icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+				});
+
+				allHospitals.forEach((hospital) => {
+					const marker = new google.maps.Marker({
+						position: hospital.geometry.location,
+						map: map,
+						title: hospital.name,
+					});
+
+					const infoWindow = new google.maps.InfoWindow({
+						content: `
+                        <div style="max-width: 200px;">
+                            <h5>${hospital.name}</h5>
+                            <p>${hospital.vicinity}</p>
+                            <p>Distance: ${hospital.distance.toFixed(2)} km</p>
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=${hospital.geometry.location.lat()},${hospital.geometry.location.lng()}&origin=${userLocation.lat()},${userLocation.lng()}" target="_blank" class="btn btn-primary btn-sm">Get Directions</a>
+                        </div>
+                    `,
+					});
+
+					marker.addListener("click", () => {
+						infoWindow.open(map, marker);
+					});
+
+					markers.push(marker);
+				});
+			}
+
+			document
+				.getElementById("list-view-btn")
+				.addEventListener("click", function () {
+					this.classList.add("active");
+					document.getElementById("map-view-btn").classList.remove("active");
+					document.getElementById("list-view").style.display = "block";
+					document.getElementById("map-view").style.display = "none";
+				});
+
+			document
+				.getElementById("map-view-btn")
+				.addEventListener("click", function () {
+					this.classList.add("active");
+					document.getElementById("list-view-btn").classList.remove("active");
+					document.getElementById("list-view").style.display = "none";
+					document.getElementById("map-view").style.display = "block";
+					google.maps.event.trigger(map, "resize");
+				});
+
+			const { lat, lng } = getQueryParams();
+			if (lat && lng) {
+				findNearbyHospitals(lat, lng);
+			} else {
+				document.getElementById("loading").style.display = "none";
+				document.getElementById("hospitals-container").innerHTML =
+					'<div class="col-12"><div class="alert alert-danger" role="alert">Location not provided. Please include latitude and longitude in the URL parameters.</div></div>';
+			}
+
+			// Medication Reminder functionality
+			document
+				.getElementById("medicationForm")
+				.addEventListener("submit", function (e) {
+					e.preventDefault();
+
+					// Get form data
+					const medicationName =
+						document.getElementById("medicationName").value;
+					const dosage = document.getElementById("dosage").value;
+					const startDate = document.getElementById("startDate").value;
+					const time = document.getElementById("time").value;
+
+					// Insert data into dosage history table
+					const table = document
+						.getElementById("dosageHistoryTable")
+						.getElementsByTagName("tbody")[0];
+					const newRow = table.insertRow();
+					const cell1 = newRow.insertCell(0);
+					const cell2 = newRow.insertCell(1);
+					const cell3 = newRow.insertCell(2);
+					const cell4 = newRow.insertCell(3);
+					cell1.innerHTML = medicationName;
+					cell2.innerHTML = dosage;
+					cell3.innerHTML = startDate;
+					cell4.innerHTML = time;
+
+					// Clear form after submission
+					document.getElementById("medicationForm").reset();
+
+					// Show success message
+					alert("Medication reminder added successfully!");
+
+					// You can add logic for sending push notifications, connecting to pharmacy API, etc.
+				});
+
+			// Initialize Bootstrap tabs
+			var triggerTabList = [].slice.call(
+				document.querySelectorAll("#myTab button")
+			);
+			triggerTabList.forEach(function (triggerEl) {
+				var tabTrigger = new bootstrap.Tab(triggerEl);
+
+				triggerEl.addEventListener("click", function (event) {
+					event.preventDefault();
+					tabTrigger.show();
+				});
+			});
+		</script>
+	</body>
+</html>
