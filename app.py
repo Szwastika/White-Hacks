@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session,jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
-
+import requests
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Change this to a random secret key
+GEMINI_API_KEY = "AIzaSyB38okcsBEWiHvYmd2Bj-0ZN1Vu4VqB6oc"
 
 def get_db_connection():
     conn = sqlite3.connect('database.db')
@@ -82,6 +83,33 @@ def logout():
     session.pop('user_id', None)
     session.pop('username', None)
     return redirect(url_for('home'))
+@app.route('/analyze_symptoms', methods=['POST'])
+def analyze_symptoms():
+    symptoms = request.json.get('symptoms')
+    
+    prompt = f"""Analyze the following symptoms and provide a diagnosis, recommendation, and medication if applicable ( NO explanation just one word answer ). If it's a simple disease like fever, cold, or pain, suggest over-the-counter medication. For more serious conditions, recommend consulting a doctor. Respond in JSON format:
+    {{
+        "diagnosis": "",
+        "recommendation": "",
+        "medication": ""
+    }}
+    
+    Symptoms: {symptoms}"""
+
+    try:
+        response = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}",
+            json={
+                "contents": [{"parts": [{"text": prompt}]}]
+            },
+            headers={"Content-Type": "application/json"}
+        )
+        response.raise_for_status()
+        ai_response = response.json()['candidates'][0]['content']['parts'][0]['text']
+        return jsonify(ai_response)
+    except Exception as e:
+        print(f"Error calling Gemini API: {str(e)}")
+        return jsonify({"error": "An error occurred while analyzing symptoms. Please try again."}), 500
 
 if __name__ == '__main__':
     init_db()

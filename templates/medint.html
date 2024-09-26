@@ -115,9 +115,6 @@
 		<script>
 			let userLocation = { lat: 0, lng: 0 };
 
-			// Replace with your actual Gemini API key
-			const GEMINI_API_KEY = "AIzaSyB38okcsBEWiHvYmd2Bj-0ZN1Vu4VqB6oc";
-
 			document
 				.getElementById("symptom-form")
 				.addEventListener("submit", async function (e) {
@@ -133,46 +130,24 @@
 					resultDiv.style.display = "block";
 
 					try {
-						// Call Gemini API directly
-						const response = await axios.post(
-							`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-							{
-								contents: [
-									{
-										parts: [
-											{
-												text: `Analyze the following symptoms and provide a diagnosis and recommendation. Don't give me explanations or other content, just Diagnosis and recommendation to which doctor to consult, I need response in JSON :{"diagnosis":"","recommendation":""}, Symptoms: ${symptoms}`,
-											},
-										],
-									},
-								],
-							},
-							{
-								headers: {
-									"Content-Type": "application/json",
-								},
-							}
-						);
+						const response = await axios.post("/analyze_symptoms", {
+							symptoms,
+						});
+						const parsedResponse = JSON.parse(response.data);
 
-						// Extract diagnosis and recommendation from Gemini's response
-						const aiResponse =
-							response.data.candidates[0].content.parts[0].text;
-						console.log("RESPONSE", aiResponse);
-
-						// Parse the response
-						const parsedResponse = JSON.parse(aiResponse);
-
-						// Display Diagnosis and Recommendation
+						// Display Diagnosis, Recommendation, and Medication
 						resultDiv.innerHTML = `
 							<h3 class="mb-3"><i class="fas fa-clipboard-check me-2"></i>Diagnosis</h3>
 							<p class="mb-4">${
 								parsedResponse.diagnosis || "No specific diagnosis provided"
 							}</p>
 							<h4 class="mb-3"><i class="fas fa-user-md me-2"></i>Recommendation</h4>
-							<p>${
+							<p class="mb-4">${
 								parsedResponse.recommendation ||
 								"No specific recommendations provided"
 							}</p>
+							<h4 class="mb-3"><i class="fas fa-pills me-2"></i>Medication</h4>
+							<p>${parsedResponse.medication || "No medication suggested"}</p>
 						`;
 
 						// Show "Find Nearby Hospitals" button
