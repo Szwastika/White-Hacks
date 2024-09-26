@@ -1,0 +1,59 @@
+import sqlite3
+
+# Connect to SQLite database (or create it if it doesn't exist)
+conn = sqlite3.connect('healthcare.db')
+
+# Create a cursor object to execute SQL commands
+cursor = conn.cursor()
+
+# Create a table for storing medications for common ailments
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS medications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ailment TEXT NOT NULL,
+    medication_name TEXT NOT NULL,
+    dosage TEXT,
+    frequency TEXT,
+    additional_info TEXT
+)
+''')
+
+# Insert sample data into the table
+medications_data = [
+    ('Cold', 'Paracetamol', '500 mg', 'Twice a day', 'Take after meals. Avoid cold drinks.'),
+    ('Cold', 'Cetrizine', '10 mg', 'Once a day', 'Take before sleep to prevent drowsiness.'),
+    ('Fever', 'Ibuprofen', '400 mg', 'Three times a day', 'Take with plenty of water.'),
+    ('Headache', 'Aspirin', '300 mg', 'As needed', 'Do not exceed 2 tablets in a day.'),
+    ('Stomach Ache', 'Omeprazole', '20 mg', 'Once a day', 'Take before breakfast for best results.'),
+    ('Cough', 'Dextromethorphan', '15 mg', 'Every 4-6 hours', 'Avoid driving post-consumption.'),
+]
+
+# Insert sample records
+cursor.executemany('''
+INSERT INTO medications (ailment, medication_name, dosage, frequency, additional_info)
+VALUES (?, ?, ?, ?, ?)
+''', medications_data)
+
+# Commit the changes
+conn.commit()
+
+# Function to get medication recommendations for a given ailment
+def get_medication_for_ailment(ailment):
+    cursor.execute("SELECT medication_name, dosage, frequency, additional_info FROM medications WHERE ailment = ?", (ailment,))
+    results = cursor.fetchall()
+    if results:
+        print(f"\nMedications for {ailment}:")
+        for row in results:
+            print(f"Medication: {row[0]}")
+            print(f"  Dosage: {row[1]}")
+            print(f"  Frequency: {row[2]}")
+            print(f"  Additional Info: {row[3]}\n")
+    else:
+        print(f"No medications found for {ailment}.")
+
+# Example usage
+get_medication_for_ailment("Cold")
+get_medication_for_ailment("Fever")
+
+# Close the connection
+conn.close()
